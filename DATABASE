@@ -1,1 +1,189 @@
+mysql> DROP DATABASE IF EXISTS pet_adoption;
+Query OK, 5 rows affected (0.06 sec)
 
+mysql> CREATE DATABASE pet_adoption;
+Query OK, 1 row affected (0.00 sec)
+
+mysql> USE pet_adoption;
+Database changed
+mysql> -- USERS
+mysql> CREATE TABLE users (
+    ->     id INT AUTO_INCREMENT PRIMARY KEY,
+    ->     name VARCHAR(100) NOT NULL,
+    ->     email VARCHAR(120) NOT NULL UNIQUE,
+    ->     password VARCHAR(255) NOT NULL,
+    ->     role ENUM('ADMIN','SHELTER','ADOPTER') NOT NULL,
+    ->     phone VARCHAR(20),
+    ->     status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    ->     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -> );
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> -- PETS
+mysql> CREATE TABLE pets (
+    ->     id INT AUTO_INCREMENT PRIMARY KEY,
+    ->     shelter_id INT NOT NULL,
+    ->     name VARCHAR(100) NOT NULL,
+    ->     type VARCHAR(50) NOT NULL,                -- dog, cat, rabbit...
+    ->     breed VARCHAR(100),
+    ->     age INT,
+    ->     location VARCHAR(100),
+    ->     description TEXT,
+    ->     photo_url VARCHAR(255),
+    ->     adoption_status ENUM('AVAILABLE','ADOPTED') NOT NULL DEFAULT 'AVAILABLE',
+    ->     approval_status ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
+    ->     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ->     FOREIGN KEY (shelter_id) REFERENCES users(id) ON DELETE CASCADE
+    -> );
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> -- APPLICATIONS
+mysql> CREATE TABLE applications (
+    ->     id INT AUTO_INCREMENT PRIMARY KEY,
+    ->     pet_id INT NOT NULL,
+    ->     adopter_id INT NOT NULL,
+    ->     details TEXT,
+    ->     status ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
+    ->     applied_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ->     FOREIGN KEY (pet_id) REFERENCES pets(id) ON DELETE CASCADE,
+    ->     FOREIGN KEY (adopter_id) REFERENCES users(id) ON DELETE CASCADE,
+    ->     UNIQUE (pet_id, adopter_id)               -- one application per adopter per pet
+    -> );
+Query OK, 0 rows affected (0.04 sec)
+
+mysql> -- MESSAGES
+mysql> CREATE TABLE messages (
+    ->     id INT AUTO_INCREMENT PRIMARY KEY,
+    ->     sender_id INT NOT NULL,
+    ->     receiver_id INT NOT NULL,
+    ->     content TEXT NOT NULL,
+    ->     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ->     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    ->     FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+    -> );
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> -- SYSTEM SETTINGS
+mysql> CREATE TABLE system_settings (
+    ->     id INT AUTO_INCREMENT PRIMARY KEY,
+    ->     setting_key VARCHAR(100) NOT NULL UNIQUE,
+    ->     setting_value VARCHAR(255) NOT NULL
+    -> );
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> -- SAMPLE DATA
+mysql> INSERT INTO users (name, email, password, role, phone) VALUES
+    -> ('Admin One',     'admin@pets.com',    'changeme', 'ADMIN',   '9000000001'),
+    -> ('Happy Paws',    'happy@shelter.com', 'changeme', 'SHELTER', '9000000002'),
+    -> ('Safe Haven',    'safe@shelter.com',  'changeme', 'SHELTER', '9000000003'),
+    -> ('Riya Sharma',   'riya@mail.com',     'changeme', 'ADOPTER', '9000000004'),
+    -> ('Aman Verma',    'aman@mail.com',     'changeme', 'ADOPTER', '9000000005'),
+    -> ('Neha Singh',    'neha@mail.com',     'changeme', 'ADOPTER', '9000000006');
+Query OK, 6 rows affected (0.01 sec)
+Records: 6  Duplicates: 0  Warnings: 0
+
+mysql>
+mysql> INSERT INTO pets (shelter_id, name, type, breed, age, location, description, adoption_status, approval_status) VALUES
+    -> (2, 'Bruno',  'Dog',    'Labrador',  2, 'Delhi',  'Friendly and active',  'AVAILABLE', 'APPROVED'),
+    -> (2, 'Misty',  'Cat',    'Persian',   1, 'Delhi',  'Calm lap cat',         'AVAILABLE', 'APPROVED'),
+    -> (2, 'Rocky',  'Dog',    'Beagle',    3, 'Delhi',  'Loves walks',          'AVAILABLE', 'PENDING'),
+    -> (2, 'Coco',   'Rabbit', 'Dutch',     1, 'Delhi',  'Gentle and quiet',     'AVAILABLE', 'APPROVED'),
+    -> (2, 'Tiger',  'Cat',    'Bengal',    2, 'Noida',  'Very playful',         'ADOPTED',   'APPROVED'),
+    -> (3, 'Max',    'Dog',    'German Shepherd', 4, 'Gurgaon', 'Well trained',  'AVAILABLE', 'APPROVED'),
+    -> (3, 'Luna',   'Cat',    'Siamese',   2, 'Gurgaon','Talkative and sweet',  'AVAILABLE', 'APPROVED'),
+    -> (3, 'Buddy',  'Dog',    'Pug',       1, 'Gurgaon','Great with kids',      'AVAILABLE', 'PENDING'),
+    -> (3, 'Snow',   'Rabbit', 'Angora',    2, 'Delhi',  'Fluffy and calm',      'AVAILABLE', 'REJECTED'),
+    -> (3, 'Daisy',  'Dog',    'Labrador',  5, 'Delhi',  'Senior, very gentle',  'AVAILABLE', 'APPROVED');
+Query OK, 10 rows affected (0.00 sec)
+Records: 10  Duplicates: 0  Warnings: 0
+
+mysql>
+mysql> INSERT INTO applications (pet_id, adopter_id, details, status) VALUES
+    -> (1, 4, 'Have a house with a garden', 'PENDING'),
+    -> (1, 5, 'First-time owner',           'PENDING'),
+    -> (2, 6, 'Live in an apartment',       'APPROVED'),
+    -> (5, 4, 'Experienced with cats',      'APPROVED'),
+    -> (6, 5, 'Work from home',             'REJECTED');
+Query OK, 5 rows affected (0.00 sec)
+Records: 5  Duplicates: 0  Warnings: 0
+
+mysql>
+mysql> INSERT INTO messages (sender_id, receiver_id, content) VALUES
+    -> (4, 2, 'Is Bruno good with children?'),
+    -> (2, 4, 'Yes, he is very friendly with kids.');
+Query OK, 2 rows affected (0.00 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+
+mysql>
+mysql> INSERT INTO system_settings (setting_key, setting_value) VALUES
+    -> ('site_name', 'Pet Adoption Platform'),
+    -> ('max_applications_per_user', '5');
+Query OK, 2 rows affected (0.01 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+
+mysql> -- QUERIES
+mysql> -- SEARCH APPROVED , AVAILABLE PETS
+mysql> SELECT * FROM pets
+    -> WHERE approval_status = 'APPROVED' AND adoption_status = 'AVAILABLE'
+    ->   AND type = 'Dog' AND location = 'Delhi';
++----+------------+-------+------+----------+------+----------+---------------------+-----------+-----------------+-----------------+---------------------+
+| id | shelter_id | name  | type | breed    | age  | location | description         | photo_url | adoption_status | approval_status | created_at          |
++----+------------+-------+------+----------+------+----------+---------------------+-----------+-----------------+-----------------+---------------------+
+|  1 |          2 | Bruno | Dog  | Labrador |    2 | Delhi    | Friendly and active | NULL      | AVAILABLE       | APPROVED        | 2026-10-09 22:27:56 |
+| 10 |          3 | Daisy | Dog  | Labrador |    5 | Delhi    | Senior, very gentle | NULL      | AVAILABLE       | APPROVED        | 2026-10-09 22:27:56 |
++----+------------+-------+------+----------+------+----------+---------------------+-----------+-----------------+-----------------+---------------------+
+2 rows in set (0.01 sec)
+
+mysql> -- APPLICATIONS PER PET
+mysql> SELECT p.name, COUNT(a.id) AS total_applications
+    -> FROM pets p LEFT JOIN applications a ON a.pet_id = p.id
+    -> GROUP BY p.id, p.name;
++-------+--------------------+
+| name  | total_applications |
++-------+--------------------+
+| Bruno |                  2 |
+| Misty |                  1 |
+| Rocky |                  0 |
+| Coco  |                  0 |
+| Tiger |                  1 |
+| Max   |                  1 |
+| Luna  |                  0 |
+| Buddy |                  0 |
+| Snow  |                  0 |
+| Daisy |                  0 |
++-------+--------------------+
+10 rows in set (0.01 sec)
+
+mysql> -- ADOPTIONS PER SHELTER
+mysql> SELECT u.name AS shelter, COUNT(p.id) AS adopted_pets
+    -> FROM users u JOIN pets p ON p.shelter_id = u.id
+    -> WHERE p.adoption_status = 'ADOPTED'
+    -> GROUP BY u.id, u.name;
++------------+--------------+
+| shelter    | adopted_pets |
++------------+--------------+
+| Happy Paws |            1 |
++------------+--------------+
+1 row in set (0.00 sec)
+
+mysql> -- APPLICATIONS PER MONTH(analytics)
+mysql> SELECT DATE_FORMAT(applied_date, '%Y-%m') AS month, COUNT(*) AS total
+    -> FROM applications GROUP BY month ORDER BY month;
++---------+-------+
+| month   | total |
++---------+-------+
+| 2026-10 |     5 |
++---------+-------+
+1 row in set (0.01 sec)
+
+mysql> -- ADOPTION HISTORY OF ONE ADOPTER
+mysql> SELECT p.name, p.type, a.status, a.applied_date
+    -> FROM applications a JOIN pets p ON p.id = a.pet_id
+    -> WHERE a.adopter_id = 4;
++-------+------+----------+---------------------+
+| name  | type | status   | applied_date        |
++-------+------+----------+---------------------+
+| Bruno | Dog  | PENDING  | 2026-10-09 22:27:56 |
+| Tiger | Cat  | APPROVED | 2026-10-09 22:27:56 |
++-------+------+----------+---------------------+
+2 rows in set (0.01 sec)
